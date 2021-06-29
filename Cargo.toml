@@ -1,0 +1,16 @@
+[package]
+name = "msgcli"
+version = "0.1.0"
+authors = ["Fredrik.Simonsson@thesimson.net>"]
+edition = "2018"
+
+
+[dependencies]
+
+serde = { version = "1.0", features = ["derive"] }
+clap = "2.33.3"
+substrate-api-client = { git = "https://github.com/simonsso/substrate-api-client.git", branch = 'simonsso' }
+# substrate-api-client = { path = "../substrate-api-client" }
+
+sp-core = { git = 'https://github.com/paritytech/substrate.git', rev = 'd6c33e7ec313f9bd5e319dc0a5a3ace5543f9617', package = 'sp-core', default-features = false, features = ['full_crypto'] }
+keyring = { git = 'https://github.com/paritytech/substrate.git', rev = 'd6c33e7ec313f9bd5e319dc0a5a3ace5543f9617', package = 'sp-keyring' }

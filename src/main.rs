@@ -18,6 +18,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .help("Submit a predefined message to the chain")
                 .takes_value(false),
         )
+        .arg(
+            clap::Arg::with_name("list")
+                .long("list")
+                .help("List all messages on chain")
+                .takes_value(false),
+        )
         .get_matches();
 
     let url: String = "ws://127.0.0.1:9944".into();
@@ -27,10 +33,56 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // set the recipient
     // let to = AccountKeyring::Bob.to_account_id();
 
+    // let mut next:Option<String> = Some("Hello")
+    if matches.is_present("list") {
+        ///! Very simple example that shows how to subscribe to events.
+        use std::sync::mpsc::channel;
+
+        // use codec::Decode;
+        // use log::{debug, error};
+        // use sp_core::sr25519;
+        use sp_core::H256 as Hash;
+
+        println!("Subscribe to events");
+        let (events_in, events_out) = channel();
+        api.subscribe_events(events_in).unwrap();
+
+        loop {
+            let event_str = events_out.recv().unwrap();
+
+            let _unhex = Vec::from_hex(event_str).unwrap();
+            let mut _er_enc = _unhex.as_slice();
+            let _events = Vec::<system::EventRecord<Event, Hash>>::decode(&mut _er_enc);
+            match _events {
+                Ok(evts) => {
+                    for evr in &evts {
+                        println!("decoded: {:?} {:?}", evr.phase, evr.event);
+                        match &evr.event {
+                            Event::pallet_balances(be) => {
+                                println!(">>>>>>>>>> balances event: {:?}", be);
+                                match &be {
+                                    balances::Event::Transfer(transactor, dest, value) => {
+                                        println!("Transactor: {:?}", transactor);
+                                        println!("Destination: {:?}", dest);
+                                        println!("Value: {:?}", value);
+                                        return;
+                                    }
+                                    _ => {
+                                        debug!("ignoring unsupported balances event");
+                                    }
+                                }
+                            }
+                            _ => debug!("ignoring unsupported module event: {:?}", evr.event),
+                        }
+                    }
+                }
+                Err(_) => error!("couldn't decode event record list"),
+            }
+        }
+    }
+
     let stdin = std::io::stdin();
     let mut it = stdin.lock().lines();
-
-    // let mut next:Option<String> = Some("Hello")
 
     if matches.is_present("hello") {
         #[allow(clippy::redundant_clone)]

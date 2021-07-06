@@ -1,3 +1,4 @@
+use sp_core::H256;
 use keyring::AccountKeyring;
 use sp_core::{crypto::Pair, U256};
 // use std::io;
@@ -18,14 +19,44 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .help("Submit a predefined message to the chain")
                 .takes_value(false),
         )
+        .arg(
+            clap::Arg::with_name("list")
+                .long("list")
+                .help("Fetch all blocks from chain and list all MSG events/extrincics")
+                .takes_value(false),
+        )
         .get_matches();
 
-    let url: String = "ws://127.0.0.1:9944".into();
+    let url:String = String::from("ws://127.0.0.1:9944");
     let from = AccountKeyring::Alice.pair();
-    let api = Api::new(url).map(|api| api.set_signer(from)).unwrap();
+    let api = Api::new(url).map(|api| api.set_signer(from))?;
 
     // set the recipient
     // let to = AccountKeyring::Bob.to_account_id();
+
+    if matches.is_present("list") {
+        match api.get_finalized_head() {
+            Ok(Some(ans)) => {
+                println!("Something: {:?}", ans);
+               
+                let mut myblockhash:Option<sp_core::H256> = Some(ans);
+                while let Ok(Some(b)) = api.get_signed_block(myblockhash) {
+                    let b:node_template_runtime::SignedBlock = b; 
+                    // let (header,exc) = block.deconstruct();
+
+                    myblockhash = Some(b.block.header.parent_hash);
+                }
+
+            }
+            Ok(_) => {
+                println!("No value returned");
+            }
+            Err(e) => {
+                println!("Error from api {:?}", e);
+            }
+        }
+    }
+
 
     let stdin = std::io::stdin();
     let mut it = stdin.lock().lines();
